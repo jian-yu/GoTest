@@ -20,7 +20,7 @@ var myOrm orm.Ormer
 
 func init() {
 	orm.RegisterDataBase("default", "mysql", "root:0926@/StudentInfoManagement?charset=utf8", 30)
-	orm.RegisterModel(new(lib.Manager), new(lib.Student), new(lib.StudentPassword), new(lib.Class), new(lib.Course), new(lib.Score))
+	orm.RegisterModel(new(lib.Manager), new(lib.Student), new(lib.StudentPassword), new(lib.Class), new(lib.Score), new(lib.Course))
 }
 
 func main() {
@@ -409,7 +409,6 @@ func courseInsert(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	responseOp(410, err.Error(), nil, res)
-
 }
 
 func courseDelete(res http.ResponseWriter, req *http.Request) {

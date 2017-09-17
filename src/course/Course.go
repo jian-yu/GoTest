@@ -2,6 +2,7 @@ package course
 
 import (
 	"errors"
+	"fmt"
 	"studentinfomanagement/src/lib"
 	"sync"
 
@@ -14,6 +15,7 @@ type CourseOperator struct {
 	mux   sync.Mutex
 }
 
+//NewCourseOperator CourseOperator构造函数
 func NewCourseOperator(orm orm.Ormer) *CourseOperator {
 	co := CourseOperator{myOrm: orm}
 	return &co
@@ -26,7 +28,8 @@ func (co *CourseOperator) Insert(cou *lib.Course) (interface{}, error) {
 	var course lib.Course
 	err := co.myOrm.QueryTable("course").Filter("name", cou.Name).One(&course)
 	if err != nil && err == orm.ErrNoRows {
-		_, err := co.myOrm.Insert(&cou)
+		fmt.Println(course)
+		_, err := co.myOrm.Insert(cou)
 		if err == nil {
 			return cou, nil
 		}
@@ -49,7 +52,7 @@ func (co *CourseOperator) Delete(cou *lib.Course) (interface{}, error) {
 	_, err := co.myOrm.Delete(&cou)
 	if err == nil {
 		var score []lib.Score
-		_, err = co.myOrm.QueryTable("sorce").Filter("course_id", cou.Id).All(&score)
+		_, err = co.myOrm.QueryTable("sorce").Filter("id", cou.Id).All(&score)
 		if err == nil && len(score) > 0 {
 			for v := range score {
 				co.myOrm.Delete(&v)
@@ -65,6 +68,7 @@ func (co *CourseOperator) Delete(cou *lib.Course) (interface{}, error) {
 	return nil, errors.New("未知错误")
 }
 
+//QueryAll 查询所有课程
 func (co *CourseOperator) QueryAll() (interface{}, error) {
 	co.mux.Lock()
 	defer co.mux.Unlock()

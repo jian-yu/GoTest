@@ -13,12 +13,12 @@ type Student struct {
 }
 
 type StudentPassword struct {
-	Id       int    `PK`
+	Id       int    `json:"id"`
 	Password string `json:"password"`
 }
 
 type Course struct {
-	Id   int    `PK,json:"id"`
+	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
 type CourseRequset struct {
@@ -26,7 +26,7 @@ type CourseRequset struct {
 }
 
 type Score struct {
-	Id         int `PK,json:"id"`
+	Id         int `json:"id"`
 	Student_id int `json:"student_id"`
 	Course_id  int `json:"course_id"`
 	Score      int `json:"score"`
@@ -44,7 +44,7 @@ type ClassRequest struct {
 }
 
 type Manager struct {
-	Id       int    `PK`
+	Id       int    `json:"id"`
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
