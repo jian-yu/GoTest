@@ -51,7 +51,7 @@ func (so *ScoreOparetor) Delete(id int, courseID int) (interface{}, error) {
 		return nil, errors.New("找不到主键")
 	}
 	if err == orm.ErrNoRows {
-		return nil, errors.New("找不到该记录")
+		return nil, errors.New("找不到该成绩")
 	}
 	return nil, errors.New("未知错误")
 }
@@ -80,22 +80,34 @@ func (so *ScoreOparetor) Update(id int, sc lib.Score) (interface{}, error) {
 	return nil, errors.New("未知错误")
 }
 
-//Query 查询一个成绩从成绩表
-func (so *ScoreOparetor) Query(id int) (interface{}, error) {
+//QueryAll 全部成绩从成绩表
+func (so *ScoreOparetor) QueryAll() (interface{}, error) {
 	so.mux.Lock()
 	defer so.mux.Unlock()
-	var soAfterQuery lib.Score
-	err := so.myOrm.QueryTable("score").Filter("id", id).One(&soAfterQuery)
+	var soAfterQuery []lib.Score
+	_, err := so.myOrm.QueryTable("score").All(&soAfterQuery)
 	if err == nil {
 		return soAfterQuery, nil
-	}
-	if err == orm.ErrMultiRows {
-		return nil, errors.New("找到多条记录")
-	}
-	if err == orm.ErrNoRows {
+	} else if err == orm.ErrNoRows {
 		return nil, errors.New("找不到记录")
 	}
 	return nil, errors.New("未知错误")
+}
+
+//QueryAll 查询某个同学所有科目的成绩
+func (so *ScoreOparetor) QueryBy(SID int) (interface{}, error) {
+	so.mux.Lock()
+	defer so.mux.Unlock()
+	var scores []lib.Score
+	_, err := so.myOrm.QueryTable("score").Filter("student_id", SID).All(&scores)
+	length := len(scores)
+	if err == nil && length > 0 {
+		return scores, nil
+	} else if err == nil && length == 0 {
+		return nil, errors.New("找不到成绩")
+	} else {
+		return nil, err
+	}
 }
 
 //QueryClass 查找班级成绩
@@ -108,17 +120,24 @@ func (so *ScoreOparetor) QueryClass(classID int) (interface{}, error) {
 	if err == nil && len(stuArr) > 0 {
 		scoreArr := make([]lib.Score, 0)
 		for _, stu := range stuArr {
-			var score lib.Score
-			so.myOrm.QueryTable("score").Filter("student_id", stu.Id).One(&score)
+			var score []lib.Score
+			_, err := so.myOrm.QueryTable("score").Filter("student_id", stu.Id).All(&score)
 			fmt.Println(score)
-			scoreArr = append(scoreArr, score)
+			if err == nil && len(score) > 0 {
+				for _, sco := range score {
+					fmt.Println(sco)
+					scoreArr = append(scoreArr, sco)
+				}
+				return scoreArr, nil
+			} else if err == nil && len(score) == 0 {
+				return nil, errors.New("该班级无成员")
+			}
 		}
-		return scoreArr, nil
+
 	} else if err == nil && len(stuArr) == 0 {
 		return nil, errors.New("该班级无成员")
 	} else if err == orm.ErrNoRows {
 		return nil, errors.New("找不到记录")
 	}
 	return nil, errors.New("未知错误")
-
 }

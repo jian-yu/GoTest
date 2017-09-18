@@ -35,6 +35,7 @@ func main() {
 func manager(res http.ResponseWriter, req *http.Request) {
 	method := req.Method
 	path := req.URL.Path
+	fmt.Printf("Method is %s , Path is %s\n", method, path)
 	if method == "POST" {
 		switch path {
 		case "/userlogin":
@@ -51,8 +52,6 @@ func manager(res http.ResponseWriter, req *http.Request) {
 			classInsert(res, req)
 		case "/class/delete":
 			classDelete(res, req)
-		case "/score/queryclass":
-			scoreQueryClass(res, req)
 		case "/score/update":
 			scoreUpdate(res, req)
 		case "/score/delete":
@@ -63,6 +62,8 @@ func manager(res http.ResponseWriter, req *http.Request) {
 			courseDelete(res, req)
 		case "/course/insert":
 			courseInsert(res, req)
+		default:
+			responseOp(401, "URL不存在", nil, res)
 		}
 	} else if method == "GET" {
 		switch path {
@@ -76,6 +77,14 @@ func manager(res http.ResponseWriter, req *http.Request) {
 			studentQueryAll(res, req)
 		case "/course/queryall":
 			courseQueryAll(res, req)
+		case "/score/queryall":
+			scoreQueryAll(res, req)
+		case "/score/queryby":
+			scoreQueryBy(res, req)
+		case "/score/queryclass":
+			scoreQueryClass(res, req)
+		default:
+			responseOp(401, "URL不存在", nil, res)
 		}
 	}
 }
@@ -344,7 +353,6 @@ func scoreInsert(res http.ResponseWriter, req *http.Request) {
 }
 
 func scoreDelete(res http.ResponseWriter, req *http.Request) {
-
 	jsonByte, err := dataParse(req)
 	if err != nil {
 		responseOp(401, "数据读取失败", nil, res)
@@ -367,25 +375,51 @@ func scoreDelete(res http.ResponseWriter, req *http.Request) {
 
 }
 
-func scoreQueryClass(res http.ResponseWriter, req *http.Request) {
-	jsonByte, err := dataParse(req)
-	if err != nil {
-		responseOp(402, err.Error(), nil, res)
-		return
-	}
-	var cla lib.ClassRequest
-	err = json.Unmarshal(jsonByte, &cla)
-	fmt.Println(cla)
-	if err != nil {
-		responseOp(402, "数据解析错误", nil, res)
-		return
-	}
-	so := score.NewScoreOparetor(myOrm)
-	allScore, err := so.QueryClass(cla.Body.Id)
+func scoreQueryBy(res http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
 	if err == nil {
-		responseOp(210, "查询成功", allScore, res)
-	} else {
+		SIDStr := req.Form.Get("student_id")
+		SID, _ := strconv.Atoi(SIDStr)
+		sco := score.NewScoreOparetor(myOrm)
+		scoreAfterQuery, err := sco.QueryBy(SID)
+		if err == nil {
+			responseOp(210, "查询成功", scoreAfterQuery, res)
+			return
+		}
 		responseOp(410, err.Error(), nil, res)
+	} else {
+		responseOp(401, "数据解析错误", nil, res)
+
+	}
+}
+
+func scoreQueryAll(res http.ResponseWriter, req *http.Request) {
+	sco := score.NewScoreOparetor(myOrm)
+	scoreAfterQuery, err := sco.QueryAll()
+	if err == nil {
+		responseOp(210, "查询成功", scoreAfterQuery, res)
+		return
+	}
+	responseOp(410, err.Error(), nil, res)
+
+}
+
+func scoreQueryClass(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("scoreQueryClass")
+	err := req.ParseForm()
+	if err == nil {
+		CIDStr := req.Form.Get("class_id")
+		CID, _ := strconv.Atoi(CIDStr)
+		fmt.Println(CID)
+		so := score.NewScoreOparetor(myOrm)
+		allScore, err := so.QueryClass(CID)
+		if err == nil {
+			responseOp(210, "查询成功", allScore, res)
+		} else {
+			responseOp(410, err.Error(), nil, res)
+		}
+	} else {
+		responseOp(401, "数据解析错误", nil, res)
 	}
 }
 
