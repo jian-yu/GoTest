@@ -110,8 +110,8 @@ func (so *ScoreOparetor) QueryBy(SID int) (interface{}, error) {
 	}
 }
 
-//QueryClass 查找班级成绩
-func (so *ScoreOparetor) QueryClass(classID int) (interface{}, error) {
+//QueryClass 查找班级成绩  按学号升序排序 查询条件condition
+func (so *ScoreOparetor) QueryClass(classID int, condition string) (interface{}, error) {
 	so.mux.Lock()
 	defer so.mux.Unlock()
 	var stuArr []lib.Student
@@ -119,18 +119,37 @@ func (so *ScoreOparetor) QueryClass(classID int) (interface{}, error) {
 	fmt.Println(stuArr)
 	if err == nil && len(stuArr) > 0 {
 		scoreArr := make([]lib.Score, 0)
-		for _, stu := range stuArr {
-			var score []lib.Score
-			_, err := so.myOrm.QueryTable("score").Filter("student_id", stu.Id).All(&score)
-			fmt.Println(score)
-			if err == nil && len(score) > 0 {
-				for _, sco := range score {
-					fmt.Println(sco)
-					scoreArr = append(scoreArr, sco)
+		if condition != "" {
+			if condition == "great" {
+				for _, stu := range stuArr {
+					var score []lib.Score
+					_, err := so.myOrm.QueryTable("score").Filter("student_id", stu.Id).Filter("score__gte", 90).OrderBy("student_id").All(&score)
+					fmt.Println(score)
+					if err == nil && len(score) > 0 {
+						for _, sco := range score {
+							fmt.Println(sco)
+							scoreArr = append(scoreArr, sco)
+						}
+						return scoreArr, nil
+					} else if err == nil && len(score) == 0 {
+						return nil, errors.New("该班级无成员")
+					}
 				}
-				return scoreArr, nil
-			} else if err == nil && len(score) == 0 {
-				return nil, errors.New("该班级无成员")
+			} else if condition == "failed" {
+				for _, stu := range stuArr {
+					var score []lib.Score
+					_, err := so.myOrm.QueryTable("score").Filter("student_id", stu.Id).Filter("score__lt", 60).OrderBy("student_id").All(&score)
+					fmt.Println(score)
+					if err == nil && len(score) > 0 {
+						for _, sco := range score {
+							fmt.Println(sco)
+							scoreArr = append(scoreArr, sco)
+						}
+						return scoreArr, nil
+					} else if err == nil && len(score) == 0 {
+						return nil, errors.New("该班级无成员")
+					}
+				}
 			}
 		}
 

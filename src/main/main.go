@@ -86,6 +86,8 @@ func manager(res http.ResponseWriter, req *http.Request) {
 		default:
 			responseOp(401, "URL不存在", nil, res)
 		}
+	} else {
+		responseOp(401, "方法不存在", nil, res)
 	}
 }
 
