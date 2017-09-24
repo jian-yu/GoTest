@@ -83,6 +83,8 @@ func manager(res http.ResponseWriter, req *http.Request) {
 			scoreQueryBy(res, req)
 		case "/score/queryclass":
 			scoreQueryClass(res, req)
+		case "/score/querycoursescore/":
+			queryCourseScore(res, req)
 		default:
 			responseOp(401, "URL不存在", nil, res)
 		}
@@ -93,63 +95,59 @@ func manager(res http.ResponseWriter, req *http.Request) {
 
 //普通用户登录
 func userLogin(res http.ResponseWriter, req *http.Request) {
-	loginResult, err := ioutil.ReadAll(req.Body)
-	fmt.Println(string(loginResult))
-	defer req.Body.Close()
+	jsonByte, err := dataParse(req)
+	if err != nil {
+		responseOp(401, "数据读取错误", nil, res)
+		return
+	}
+	var resultJSON lib.LoginRequest
+	err = json.Unmarshal(jsonByte, &resultJSON)
+	fmt.Println(resultJSON)
 	if err != nil {
 		responseOp(401, err.Error(), nil, res)
 	} else {
-		var resultJSON lib.LoginRequest
-		err := json.Unmarshal(loginResult, &resultJSON)
-		fmt.Println(resultJSON)
-		if err != nil {
-			responseOp(401, err.Error(), nil, res)
-		} else {
-			password := resultJSON.Body.Password
-			var stuPw lib.StudentPassword
-			err := myOrm.QueryTable("student_password").Filter("id", resultJSON.Body.Id).One(&stuPw)
-			if err == nil {
-				if password == stuPw.Password {
-					responseOp(210, "login successful!", nil, res)
-				} else {
-					responseOp(410, "login error! password error", nil, res)
-				}
+		password := resultJSON.Body.Password
+		var stuPw lib.StudentPassword
+		err := myOrm.QueryTable("student_password").Filter("id", resultJSON.Body.Id).One(&stuPw)
+		if err == nil {
+			if password == stuPw.Password {
+				responseOp(210, "login successful!", nil, res)
 			} else {
-				fmt.Println(err)
-				responseOp(410, err.Error(), nil, res)
+				responseOp(410, "login error! password error", nil, res)
 			}
+		} else if err == orm.ErrNoRows {
+			fmt.Println(err)
+			responseOp(410, "用户不存在", nil, res)
 		}
 	}
+
 }
 
 //管理员登录
 func managerLogin(res http.ResponseWriter, req *http.Request) {
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-	fmt.Println(string(b))
+	jsonByte, err := dataParse(req)
 	if err != nil {
-		responseOp(402, "数据读取错误", nil, res)
+		responseOp(401, "数据读取错误", nil, res)
+		return
+	}
+	var managerRes lib.ManagerRequest
+	err = json.Unmarshal(jsonByte, &managerRes)
+	if err != nil {
+		responseOp(401, "数据解析错误", nil, res)
 	} else {
-		var managerRes lib.ManagerRequest
-		err := json.Unmarshal(b, &managerRes)
-		if err != nil {
-			responseOp(402, "数据解析错误", nil, res)
+		password := managerRes.Body.Password
+		var manager lib.Manager
+		err := myOrm.QueryTable("manager").Filter("name", managerRes.Body.Name).One(&manager)
+		if err == orm.ErrNoRows {
+			responseOp(410, "管理员不存在", nil, res)
 		} else {
-			password := managerRes.Body.Password
-			var manager lib.Manager
-			err := myOrm.QueryTable("Manager").Filter("name", managerRes.Body.Name).One(&manager)
-			if err != nil {
-				responseOp(404, "该用户未注册", nil, res)
+			if password == manager.Password {
+				responseOp(210, "Manager login successful!", manager, res)
 			} else {
-				if password == manager.Password {
-					responseOp(201, "Manager login successful!", manager, res)
-				} else {
-					responseOp(403, "Manager login password error", nil, res)
-				}
+				responseOp(410, "Manager login password error", nil, res)
 			}
 		}
 	}
-
 }
 func classDelete(res http.ResponseWriter, req *http.Request) {
 	jsonByte, err := dataParse(req)
@@ -406,15 +404,34 @@ func scoreQueryAll(res http.ResponseWriter, req *http.Request) {
 
 }
 
+func queryCourseScore(res http.ResponseWriter, req *http.Request) {
+	err := req.ParseForm()
+	if err == nil {
+		courseIDStr := req.Form.Get("course_id")
+		condition := req.Form.Get("condition")
+		courseID, _ := strconv.Atoi(courseIDStr)
+		so := score.NewScoreOparetor(myOrm)
+		all, err := so.QueryCourseScoreBy(courseID, condition)
+		if err == nil {
+			responseOp(210, "查询成功", all, res)
+		} else {
+			responseOp(410, err.Error(), nil, res)
+		}
+	} else {
+		responseOp(410, err.Error(), nil, res)
+	}
+}
+
 func scoreQueryClass(res http.ResponseWriter, req *http.Request) {
 	fmt.Println("scoreQueryClass")
 	err := req.ParseForm()
 	if err == nil {
-		CIDStr := req.Form.Get("class_id")
-		CID, _ := strconv.Atoi(CIDStr)
-		fmt.Println(CID)
+		classIDStr := req.Form.Get("class_id")
+		courseIDStr := req.Form.Get("course_id")
+		classID, _ := strconv.Atoi(classIDStr)
+		courseID, _ := strconv.Atoi(courseIDStr)
 		so := score.NewScoreOparetor(myOrm)
-		allScore, err := so.QueryClass(CID)
+		allScore, err := so.QueryClass(classID, courseID)
 		if err == nil {
 			responseOp(210, "查询成功", allScore, res)
 		} else {

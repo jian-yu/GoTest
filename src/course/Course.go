@@ -73,7 +73,7 @@ func (co *CourseOperator) QueryAll() (interface{}, error) {
 	co.mux.Lock()
 	defer co.mux.Unlock()
 	var courses []lib.Course
-	_, err := co.myOrm.QueryTable("course").All(&courses)
+	_, err := co.myOrm.QueryTable("course").OrderBy("id").All(&courses)
 	if err == nil && len(courses) > 0 {
 		return courses, nil
 	} else if err == nil && len(courses) == 0 {

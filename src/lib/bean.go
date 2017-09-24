@@ -9,7 +9,7 @@ type Student struct {
 	Id       int    `json:"id"`
 	Name     string `json:"name"`
 	Sex      string `json:"sex"`
-	Class_id uint   `json:"class_id"`
+	Class_id int   `json:"class_id"`
 }
 
 type StudentPassword struct {
@@ -31,6 +31,15 @@ type Score struct {
 	Course_id  int `json:"course_id"`
 	Score      int `json:"score"`
 }
+type Score1 struct {
+	Id         int    `json:"id",orm:"column(id)"`
+	Name       string `json:"name",orm:"-"`
+	Student_id int    `json:"student_id",orm:"column(student_id)"`
+	Course_id  int    `json:"course_id",orm:"column(course_id)"`
+	Class_id   int    `json:"class_id",orm:"column(class_id)"`
+	Score      int    `json:"score",orm:"column(score)"`
+}
+
 type ScoreRequest struct {
 	Body Score `json:"body"`
 }
@@ -45,7 +54,7 @@ type ClassRequest struct {
 
 type Manager struct {
 	Id       int    `json:"id"`
-	Name     string `json:"name"`
+	Name     string `json:"username"`
 	Password string `json:"password"`
 }
 
